@@ -7,28 +7,10 @@ interface ComponentArgs {
     versioning?: Partial<aws.s3.BucketVersioning>;
 }
 
-interface ComponentData {
-    url: pulumi.Output<string>
-}
-
-export class Component extends pulumi.ComponentResource<ComponentData> {
+export class Component extends pulumi.ComponentResource {
     public readonly url: pulumi.Output<string>;
     constructor(name: string, args: ComponentArgs, opts?: pulumi.ComponentResourceOptions) {
         super("x:index:Component", name, {name, args, opts}, opts);
-
-        const data: ComponentData = pulumi.output(this.getData());
-        this.url = data.url;
-        this.registerOutputs({
-            "url": this.url
-        })
-    }
-
-    protected async initialize(props: {
-        name: string,
-        args: ComponentArgs,
-        opts: pulumi.ComponentResourceOptions
-    }): Promise<ComponentData> {
-        const {name, args} = props;
 
         const bucket = new aws.s3.Bucket(`${name}`, {}, {parent: this});
 
@@ -40,7 +22,6 @@ export class Component extends pulumi.ComponentResource<ComponentData> {
         }, {parent: this});
 
         const bucketContent = args.content !== undefined ? args.content : "Hello, World!";
-        // const bucketContent = "Hello, World!"
 
         const content = new aws.s3.BucketObject(`${name}`, {
             bucket: bucket.bucket,
@@ -84,8 +65,9 @@ export class Component extends pulumi.ComponentResource<ComponentData> {
             }).json
         }, {dependsOn: [ownershipControls, accessBlock], parent: this})
 
-        return {
-            url: website.websiteEndpoint
-        }
+        this.url = website.websiteEndpoint;
+        this.registerOutputs({
+            "url": this.url
+        })
     }
 }
